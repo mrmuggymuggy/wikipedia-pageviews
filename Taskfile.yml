@@ -23,6 +23,11 @@ includes:
 
 tasks:
 
+  jupyter:
+    cmds:
+      #jupyter with latest spark
+      - docker run --rm -p 8888:8888 -v `pwd`/jupyter-notebook:/home/jovyan/work jupyter/pyspark-notebook:feacdbfc2e89
+
   clean-pyc:
     cmds:
       - find . -name '*.pyc' -exec rm -f {} +
