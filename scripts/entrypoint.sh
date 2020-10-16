@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
-: "${PROPERTIES_FILE:="/opt/spark.properties"}"
+: "${PROPERTIES_FILE:="/workspace/configs/spark.properties"}"
 : "${SPARK_DRIVER_PORT:="35861"}"
 : "${PYTHON_FILE:="/opt/example/python/pi.py"}"
+: "${PY_FILES:="/workspace/dist/dependencies.zip"}"
 : "${SPARK_MODE:="client"}"
 
 export \
   PROPERTIES_FILE \
   SPARK_DRIVER_PORT \
   PYTHON_FILE \
+  PY_FILES \
   SPARK_MODE \
+
+export PYTHIN_BIN=$(which python)
 
 function ensure() {
     ## Determine if a bash variable is empty or not ##
@@ -42,15 +46,16 @@ function ensure_localmode() {
 }
 
 ensure SPARK_MODE
+ensure SPARK_HOME
 
 set -o xtrace
 
 case "${SPARK_MODE}" in
   local)
     ensure_localmode;
-    /opt/spark/bin/spark-submit \
+    $SPARK_HOME/bin/spark-submit \
     --name $SERVICE_NAME \
-    --conf spark.pyspark.python=/usr/bin/python3 \
+    --conf spark.pyspark.python=$PYTHIN_BIN \
     --properties-file $PROPERTIES_FILE \
     --py-files $PY_FILES \
     $PYTHON_FILE
@@ -73,7 +78,7 @@ case "${SPARK_MODE}" in
     --conf spark.driver.host=$MY_POD_IP \
     --conf spark.driver.port=$SPARK_DRIVER_PORT \
     --conf spark.kubernetes.container.image=$CONTAINER_IMAGE \
-    --conf spark.pyspark.driver.python=/usr/bin/python3 \
+    --conf spark.pyspark.driver.python=$PYTHIN_BIN \
     --properties-file $PROPERTIES_FILE \
     --py-files $PY_FILES \
     $PYTHON_FILE

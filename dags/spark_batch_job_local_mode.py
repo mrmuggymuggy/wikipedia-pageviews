@@ -36,46 +36,34 @@ ENV = os.environ.get("ENV")
 docker_image = "dcr.flix.tech/data/flux/k8s-spark-example:latest"
 
 envs = {
-"SERVICE_NAME": DAG_NAME,
-"CONTAINER_IMAGE": docker_image,
-"PY_FILES": "/workspace/dist/libs.zip,/workspace/dist/dependencies.zip",
-"PYTHON_FILE": "/workspace/python/pi.py",
+    "SERVICE_NAME": DAG_NAME,
+    "CONTAINER_IMAGE": docker_image,
+    "PY_FILES": "/workspace/dist/libs.zip,/workspace/dist/dependencies.zip",
+    "PYTHON_FILE": "/workspace/python/pi.py",
 }
 
-args = {
-    'owner': 'Airflow',
-    'start_date': airflow.utils.dates.days_ago(2)
-}
+args = {"owner": "Airflow", "start_date": airflow.utils.dates.days_ago(2)}
 
 # base path returned zip dag path
 base_path = os.path.split(__file__)[0]
 
-plain_txt = read_packaged_file(
-    f"{base_path}/plain_files/plain.txt"
-)
+plain_txt = read_packaged_file(f"{base_path}/plain_files/plain.txt")
 
-with DAG(
-    dag_id=DAG_NAME,
-    default_args=args,
-    schedule_interval='30 0 * * *'
-) as dag:
+with DAG(dag_id=DAG_NAME, default_args=args, schedule_interval="30 0 * * *") as dag:
     # Use the zip binary, which is only found in this special docker image
     read_local_file = BashOperator(
-        task_id='read_local_file',
-        bash_command=f"echo {plain_txt}")
+        task_id="read_local_file", bash_command=f"echo {plain_txt}"
+    )
     # Limit resources on this operator/task with node affinity & tolerations
     spark_batch_job_local_mode = KubernetesPodOperator(
-        namespace=os.environ['AIRFLOW__KUBERNETES__NAMESPACE'],
+        namespace=os.environ["AIRFLOW__KUBERNETES__NAMESPACE"],
         name="spark_batch_job_local_mode",
         image=docker_image,
         image_pull_policy="IfNotPresent",
-        cmds=["/bin/sh","-c"],
+        cmds=["/bin/sh", "-c"],
         arguments=[spark_submit_sh],
         env_vars=envs,
-        resources={
-            'request_memory': "4024Mi",
-            'request_cpu': "100m"
-            },
+        resources={"request_memory": "4024Mi", "request_cpu": "100m"},
         task_id="spark_batch_job_local_mode",
         is_delete_operator_pod=True,
         in_cluster=True,

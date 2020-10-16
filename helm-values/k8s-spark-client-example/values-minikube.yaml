@@ -22,9 +22,9 @@ spark_properties: |-
   spark.kubernetes.allocation.batch.size=5
   spark.kubernetes.allocation.batch.delay=1s
   spark.kubernetes.authenticate.driver.serviceAccountName=spark
-  spark.kubernetes.executor.lostCheck.maxAttempts=10  
-  spark.kubernetes.submission.waitAppCompletion=false 
-  spark.kubernetes.report.interval=1s 
+  spark.kubernetes.executor.lostCheck.maxAttempts=10
+  spark.kubernetes.submission.waitAppCompletion=false
+  spark.kubernetes.report.interval=1s
   spark.kubernetes.pyspark.pythonVersion=3
   spark.pyspark.python=/usr/bin/python3
 
@@ -43,4 +43,3 @@ serviceAccount:
 
 service:
   type: ClusterIP
-

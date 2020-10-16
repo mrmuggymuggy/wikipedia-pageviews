@@ -3,7 +3,7 @@
 version: '2'
 
 env:
-  DOCKER_IMAGE: k8s-spark-example
+  DOCKER_IMAGE: wikipedia_pageviews
   ENV: '{{default "minikube" .ENV}}'
   DOCKER_REGISTRY: '{{default "dcr.flix.tech" .DOCKER_REGISTRY}}'
   NAMESPACE: '{{default "default" .NAMESPACE}}'
@@ -24,20 +24,18 @@ includes:
 tasks:
 
   jupyter:
+    summary: |
+      Local development with jupyter-notebook
     cmds:
       #jupyter with latest spark
       - docker run --rm -p 8888:8888 -v `pwd`/jupyter-notebook:/home/jovyan/work jupyter/pyspark-notebook:feacdbfc2e89
 
-  clean-pyc:
+  local.run:
+    summary: |
+      Run the app locally with docker-compose
     cmds:
-      - find . -name '*.pyc' -exec rm -f {} +
-      - find . -name '*.pyo' -exec rm -f {} +
-      - find . -name '*~' -exec rm -f {} +
-      - find . -name '__pycache__' -exec rm -fr {} +
-
-  clean-pip:
-    cmds:
-      - pip freeze | xargs pip uninstall -y
+      - docker-compose build
+      - docker-compose up --exit-code-from wikipedia_pageviews
 
   lint:
     cmds:
@@ -49,7 +47,7 @@ tasks:
       - pre-commit install
       - pre-commit run --all-files
 
-  run.local:
+  local.deploy:
     deps: [set.k8s.context]
     cmds:
       - |
@@ -90,22 +88,6 @@ tasks:
         {{end}}
     vars:
       SERVICES: "{{default .DEFAULT_SERVICES .SERVICES}}"
-
-  spark.helm.template:
-    deps: [set.k8s.context]
-    cmds:
-      - >
-        {{$helm_chart_name := .HELM_CHART_NAME}}
-        {{range $service := .SERVICES | trim | splitLines -}}
-          helm template {{$service}} {{$helm_chart_name}} \
-            --namespace $NAMESPACE \
-            --set-string spark_driver.image.repository=$DOCKER_REGISTRY/data/flux/$DOCKER_IMAGE \
-            --set-string spark_driver.image.tag=$COMMIT \
-            --values ./helm-values/{{$service}}/values-$ENV.yaml;
-        {{end}}
-    vars:
-      SERVICES: "{{default .DEFAULT_SERVICES .SERVICES}}"
-
 
   spark.helm.undeploy:
     summary: |

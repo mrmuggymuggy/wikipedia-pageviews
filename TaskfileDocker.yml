@@ -9,31 +9,10 @@ tasks:
       - echo executed on $DOCKER_REGISTRY
     silent: true
 
-  build-libs:
-    cmds:
-      - rm -rf dist/libs/
-      - mkdir -p dist/libs
-      - pip3 install --upgrade -r requirements.txt --target dist/libs
-      - cd dist/libs && zip -r ../{{.ZIP_NAME}} . -x "*/__pycache__/*" -x "*/examples/*"
-      - rm -rf dist/libs/
-    vars:
-      ZIP_NAME: libs.zip
-
-  build-dependencies:
-    cmds:
-      - mkdir -p dist
-      - rm -rf dist/{{.ZIP_NAME}}
-      - zip -r dist/{{.ZIP_NAME}} python -x "*/libs/*" -x "*/tests/*" -x "*/__pycache__/*"
-    vars:
-      ZIP_NAME: dependencies.zip
-
   # build image with COMMIT and LATEST tag
   build:
-    deps: [build-libs, build-dependencies]
     cmds:
-      - |
-        {{if eq .KUBE_CONTEXT "minikube"}}eval $(minikube docker-env){{end}}
-        docker build -t $DOCKER_REGISTRY/data/flux/$DOCKER_IMAGE:$COMMIT .
+      - docker build -t $DOCKER_REGISTRY/data/flux/$DOCKER_IMAGE:$COMMIT .
       - task: tag_push
 
   tag_push:
@@ -49,5 +28,4 @@ tasks:
         {{end}}
     vars:
       TAGS: |
-        "$DOCKER_REGISTRY/data/flux/$DOCKER_IMAGE:$COMMIT"
         "$DOCKER_REGISTRY/data/flux/$DOCKER_IMAGE:latest"

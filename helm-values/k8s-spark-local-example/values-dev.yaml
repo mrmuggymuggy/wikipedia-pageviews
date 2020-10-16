@@ -28,4 +28,3 @@ serviceAccount:
 
 service:
   type: ClusterIP
-
