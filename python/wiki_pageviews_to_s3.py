@@ -63,8 +63,8 @@ def transform_data(data: Tuple[DataFrame, DataFrame]) -> DataFrame:
 
 
 def load_data(data: DataFrame) -> None:
-    data.repartition(1).write.option("header", True).option("inferSchema", True).option(
-        "delimiter", ","
+    data.repartition(1).write.option("delimiter", ",").option("header", True).option(
+        "inferSchema", True
     ).mode("overwrite").csv(PATH_OUT)
 
 
