@@ -1,9 +1,9 @@
 from pyspark.sql.dataframe import DataFrame
-from python.wiki_pageviews.wiki_pageviews_config import logger, spark_session
 from typing import Tuple
+from jobs.wiki_pageviews.wiki_pageviews_config import logger
 
 
-def data_clean(data_df, blacklist_df) -> DataFrame:
+def data_clean(spark_session, data_df, blacklist_df) -> DataFrame:
     data_df.createOrReplaceTempView("wiki_pageviews")
     blacklist_df.createOrReplaceTempView("blacklists")
     # better query is possible, we can check spark execute plan
@@ -21,7 +21,7 @@ def data_clean(data_df, blacklist_df) -> DataFrame:
     return cleaned_df
 
 
-def compute_ranks(cleaned_df) -> DataFrame:
+def compute_ranks(spark_session, cleaned_df) -> DataFrame:
     cleaned_df.createOrReplaceTempView("cleaned_wiki_pageviews")
     """
     for sql knowledge :)
@@ -33,16 +33,18 @@ def compute_ranks(cleaned_df) -> DataFrame:
         select domain_code,
                count_views,
                page_title,
-               row_number() over (partition by domain_code order by count_views desc) as domain_rank
+               dense_rank() over (partition by domain_code order by count_views desc) as domain_rank
         from cleaned_wiki_pageviews) ranks
-    where domain_rank <= 1;
+    where domain_rank <= 3;
     """
     logger.info(f"compute pageviews rank with query : {rank_query}")
     ranked_df = spark_session.sql(rank_query)
     return ranked_df
 
 
-def transform_wiki_pageviews(data: Tuple[DataFrame, DataFrame]) -> DataFrame:
+def transform_wiki_pageviews(
+    spark_session, data: Tuple[DataFrame, DataFrame]
+) -> DataFrame:
     data_df, blacklist_df = data
-    cleaned_df = data_clean(data_df, blacklist_df)
-    return compute_ranks(cleaned_df)
+    cleaned_df = data_clean(spark_session, data_df, blacklist_df)
+    return compute_ranks(spark_session, cleaned_df)

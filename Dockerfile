@@ -6,8 +6,7 @@ COPY . /mnt
 
 RUN apt-get update && apt-get install -y zip
 
-RUN mkdir -p dist &&\
-	zip -r ../dependency.zip python \
+RUN zip -r dependencies.zip jobs \
 	-x "*/__pycache__/*" \
 	-x "*/tests/*"
 
@@ -21,10 +20,10 @@ COPY requirements.txt .
 #RUN pip install --no-cache-dir -r requirements.txt
 
 # copy Python dependecies and libs
-COPY --from=builder /mnt/dist/dependencies.zip /workspace/dist/dependencies.zip
+COPY --from=builder /mnt/dependencies.zip /workspace/dist/dependencies.zip
 
 # copy all Spark jobs
-COPY ./python/ /workspace/python/
+COPY ./jobs/ /workspace/jobs/
 COPY ./configs /workspace/configs
 
 #USER 1001

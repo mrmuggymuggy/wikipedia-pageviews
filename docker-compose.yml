@@ -2,7 +2,6 @@ version: "3.8"
 services:
   wikipedia_pageviews:
     build: .
-    #image: dcr.flix.tech/data/flux/wikipedia_pageviews:abe932e
     environment:
       SPARK_MODE: local
       SERVICE_NAME: wikipedia_pageviews
@@ -10,6 +9,14 @@ services:
       SOURCE_URL_IN: https://dumps.wikimedia.org/other/pageviews/2020/2020-10/pageviews-20201001-020000.gz
       BLACKLISG_URL_IN: https://s3.amazonaws.com/dd-interview-data/data_engineer/wikipedia/blacklist_domains_and_pages
       PATH_OUT: /tmp/out
-      PYTHON_FILE: /workspace/python/wiki_pageviews_to_s3.py
+      PYTHON_FILE: /workspace/jobs/wiki_pageviews_to_s3.py
     volumes:
         - /tmp:/tmp
+
+  wikipedia_pageviews_tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+        - .:/mnt
+    entrypoint:  ["pytest", "/mnt/jobs/tests/"]

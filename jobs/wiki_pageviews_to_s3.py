@@ -1,28 +1,26 @@
 """
 ETL python for creating master data from S3 to S3
 """
-from python.wiki_pageviews.wiki_pageviews_config import (
+from jobs.wiki_pageviews.wiki_pageviews_config import (
     APP_NAME,
     SOURCE_URL_IN,
     BLACKLISG_URL_IN,
     PATH_OUT,
     data_schema,
     blacklist_schema,
-    spark_session,
     logger,
 )
-from python.wiki_pageviews.wiki_pageviews_model import transform_wiki_pageviews
+from jobs.wiki_pageviews.wiki_pageviews_model import transform_wiki_pageviews
 from typing import Tuple
 from pyspark.sql import DataFrame, SparkSession
 from pyspark import SparkFiles
 
 
 def main():
-    spark = spark_session
+    spark = SparkSession.builder.appName(APP_NAME).getOrCreate()
     data_tuple = extract_data(spark)
-    data_transformed = transform_data(data_tuple)
+    data_transformed = transform_data(spark, data_tuple)
     load_data(data_transformed)
-
     logger.info(
         f"Starting batch query to compute wikipedia pageview ranks with {SOURCE_URL_IN} as source and {PATH_OUT} as output path."
     )
@@ -57,8 +55,8 @@ def extract_data(spark: SparkSession) -> Tuple[DataFrame, DataFrame]:
     return (data_df, blacklist_df)
 
 
-def transform_data(data: Tuple[DataFrame, DataFrame]) -> DataFrame:
-    data = transform_wiki_pageviews(data)
+def transform_data(spark_session, data: Tuple[DataFrame, DataFrame]) -> DataFrame:
+    data = transform_wiki_pageviews(spark_session, data)
     return data
 
 

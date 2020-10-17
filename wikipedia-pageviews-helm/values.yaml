@@ -1,0 +1,54 @@
+# Default values for spark.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Default values for cujo-python-executor.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+spark_driver:
+  mode: local
+  image:
+    repository: dcr.mfb.io/data/k8s-spark-example
+    tag: to_be_overwrite
+    pullPolicy: IfNotPresent
+  env:
+    SPARK_MODE: local
+    SERVICE_NAME: wikipedia_pageviews
+    APP_NAME: wikipedia_pageviews
+    SOURCE_URL_IN: https://dumps.wikimedia.org/other/pageviews/2020/2020-10/pageviews-20201001-020000.gz
+    BLACKLISG_URL_IN: https://s3.amazonaws.com/dd-interview-data/data_engineer/wikipedia/blacklist_domains_and_pages
+    PATH_OUT: /tmp/out
+    PYTHON_FILE: /workspace/jobs/wiki_pageviews_to_s3.py
+  iamRoleArn: xxxxx
+  datadog:
+    enabled: true
+  spark_properties: |-
+    spark.master=local[6]
+
+spec:
+  schedule: "25 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+           resources:
+              requests:
+                cpu: 1
+                memory: 2Gi
+                ephemeral-storage: 1Gi
+              limits:
+                cpu: 4
+                memory: 4Gi
+      backoffLimit: 3
+      activeDeadlineSeconds: 1800
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

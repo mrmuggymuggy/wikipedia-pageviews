@@ -12,30 +12,14 @@ env:
 
 vars:
   KUBE_CONTEXT: '{{default "minikube" .KUBE_CONTEXT}}'
-  HELM_CHART_NAME: k8s-spark-example-helm
+  HELM_CHART_NAME: wikipedia-pageviews-helm
   DEFAULT_SERVICES: |-
-    k8s-spark-local-example
-    k8s-spark-client-example
+    wikipedia-pageviews
 
 includes:
   dags: ./dags
-  docker: ./TaskfileDocker.yml
 
 tasks:
-
-  jupyter:
-    summary: |
-      Local development with jupyter-notebook
-    cmds:
-      #jupyter with latest spark
-      - docker run --rm -p 8888:8888 -v `pwd`/jupyter-notebook:/home/jovyan/work jupyter/pyspark-notebook:feacdbfc2e89
-
-  local.run:
-    summary: |
-      Run the app locally with docker-compose
-    cmds:
-      - docker-compose build
-      - docker-compose up --exit-code-from wikipedia_pageviews
 
   lint:
     cmds:
@@ -46,6 +30,29 @@ tasks:
       - pip install pre-commit
       - pre-commit install
       - pre-commit run --all-files
+
+  docker.build:
+    cmds:
+      - docker build -t $DOCKER_REGISTRY/data/flux/$DOCKER_IMAGE:$COMMIT .
+
+  jupyter:
+    summary: |
+      Local development with jupyter-notebook, fast feedback MVP
+    cmds:
+      #jupyter with latest spark
+      - docker run --rm -p 8888:8888 -v `pwd`/jupyter-notebook:/home/jovyan/work jupyter/pyspark-notebook:feacdbfc2e89
+
+  local.run:
+    summary: |
+      Run the app locally with docker-compose
+    cmds:
+      - docker-compose up --abort-on-container-exit --build wikipedia_pageviews
+
+  unit-test:
+    summary: |
+      Run the unit-tests locally with docker-compose
+    cmds:
+      - docker-compose up --abort-on-container-exit --build wikipedia_pageviews_tests
 
   local.deploy:
     deps: [set.k8s.context]
@@ -59,10 +66,6 @@ tasks:
     cmds:
       - if minikube status | grep Running; then echo "minikube running..."; else echo "starting minikube"; minikube start; fi
 
-  default:
-    cmds:
-      - echo 'executed on {{if ne .KUBE_CONTEXT "minikube"}}remote{{else}}local{{end}}'
-    silent: true
 
   spark.helm.deploy:
     summary: |
@@ -89,6 +92,21 @@ tasks:
     vars:
       SERVICES: "{{default .DEFAULT_SERVICES .SERVICES}}"
 
+  spark.helm.template:
+    deps: [set.k8s.context]
+    cmds:
+      - >
+        {{$helm_chart_name := .HELM_CHART_NAME}}
+        {{range $service := .SERVICES | trim | splitLines -}}
+          helm template {{$service}} {{$helm_chart_name}} \
+            --namespace $NAMESPACE \
+            --set-string spark_driver.image.repository=$DOCKER_REGISTRY/data/flux/$DOCKER_IMAGE \
+            --set-string spark_driver.image.tag=$COMMIT \
+            --values ./helm-values/{{$service}}/values-$ENV.yaml;
+        {{end}}
+    vars:
+      SERVICES: "{{default .DEFAULT_SERVICES .SERVICES}}"
+
   spark.helm.undeploy:
     summary: |
       When run locally, you need to specify environment variables
@@ -107,3 +125,8 @@ tasks:
     cmds:
       - kubectl config set-context {{.KUBE_CONTEXT}} --namespace=$NAMESPACE
       - kubectl config use-context {{.KUBE_CONTEXT}} --namespace=$NAMESPACE
+
+  default:
+    cmds:
+      - echo 'executed on {{if ne .KUBE_CONTEXT "minikube"}}remote{{else}}local{{end}}'
+    silent: true

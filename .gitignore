@@ -2,3 +2,4 @@
 **/*.iml
 .idea/
 dist
+.pytest_cache

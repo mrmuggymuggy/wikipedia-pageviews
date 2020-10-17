@@ -1,0 +1,5 @@
+FROM jupyter/pyspark-notebook:feacdbfc2e89
+
+COPY requirements-test.txt .
+
+RUN pip install -r requirements-test.txt
