@@ -3,11 +3,11 @@ import pandas as pd
 from jobs.wiki_pageviews.wiki_pageviews_model import (
     compute_ranks,
     data_clean,
+    aggregate_pageviews_by_count_views,
 )
 from jobs.wiki_pageviews.wiki_pageviews_config import (
     data_schema,
     blacklist_schema,
-    toprank_schema,
 )
 
 
@@ -59,6 +59,48 @@ def test_data_clean(spark_session):
     )
 
 
+def test_aggregate_pageviews_by_count_views(spark_session):
+    """ test the availability/passing of different contexts """
+    data = [
+        ("fr.m", "Relations_entre_Israël_et_la_Syrie", 10, 0),
+        ("fr.m", "Relations_entre_judaïsme_et_christianisme", 2, 0),
+        ("fr.m", "Relations_entre_juifs_et_musulmans", 16, 0),
+        ("fr.m", "Relations_entre_l'Algérie_et_le_Maroc", 10, 0),
+        ("fr.m", "Relations_entre_Israël_et_la_Syrie", 1, 0),
+        ("fr.m", "Relations_entre_judaïsme_et_christianisme", 20, 0),
+        ("fr.m", "Relations_entre_juifs_et_musulmans", 6, 0),
+        ("fr.m", "Relations_entre_l'Algérie_et_le_Maroc", 100, 0),
+        ("de.m", "Wilde_Malve", 5, 0),
+        ("de.m", "Wilde_Müllkippe", 1, 0),
+        ("de.m", "Wilde_Wasser", 1, 0),
+        ("de.m", "Wildecker_Herzbuben", 9, 0),
+        ("de.m", "Wilde_Malve", 50, 0),
+        ("de.m", "Wilde_Müllkippe", 12, 0),
+        ("de.m", "Wilde_Wasser", 13, 0),
+        ("de.m", "Wildecker_Herzbuben", 9, 0),
+    ]
+
+    expected_result = [
+        ("fr.m", "Relations_entre_Israël_et_la_Syrie", 11),
+        ("fr.m", "Relations_entre_judaïsme_et_christianisme", 22),
+        ("fr.m", "Relations_entre_juifs_et_musulmans", 22),
+        ("fr.m", "Relations_entre_l'Algérie_et_le_Maroc", 110),
+        ("de.m", "Wilde_Malve", 55),
+        ("de.m", "Wilde_Müllkippe", 13),
+        ("de.m", "Wilde_Wasser", 14),
+        ("de.m", "Wildecker_Herzbuben", 18),
+    ]
+
+    df_data = spark_session.createDataFrame(data, schema=data_schema)
+    result_df = aggregate_pageviews_by_count_views(spark_session, df_data).toPandas()
+    expected_result_df = spark_session.createDataFrame(
+        expected_result, schema=["domain_code", "page_title", "count_views"]
+    ).toPandas()
+    pd.testing.assert_frame_equal(
+        result_df, expected_result_df, check_like=True, check_dtype=False
+    )
+
+
 def test_compute_ranks(spark_session):
     """ test the availability/passing of different contexts """
     data = [
@@ -86,7 +128,8 @@ def test_compute_ranks(spark_session):
     df_data = spark_session.createDataFrame(data, schema=data_schema)
     result_df = compute_ranks(spark_session, df_data).toPandas()
     expected_result_df = spark_session.createDataFrame(
-        expected_result, schema=toprank_schema
+        expected_result,
+        schema=["domain_code", "count_views", "page_title", "domain_rank"],
     ).toPandas()
 
     pd.testing.assert_frame_equal(

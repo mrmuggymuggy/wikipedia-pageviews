@@ -21,8 +21,23 @@ def data_clean(spark_session, data_df, blacklist_df) -> DataFrame:
     return cleaned_df
 
 
-def compute_ranks(spark_session, cleaned_df) -> DataFrame:
+# it's useful when do large batch(daily) process
+def aggregate_pageviews_by_count_views(spark_session, cleaned_df) -> DataFrame:
     cleaned_df.createOrReplaceTempView("cleaned_wiki_pageviews")
+    aggregate_query = """
+    select  domain_code,
+            page_title,
+            Sum(count_views) as count_views
+    from cleaned_wiki_pageviews
+    group by domain_code, page_title;
+    """
+    logger.info(f"data aggregation with query : {aggregate_query}")
+    aggregated_df = spark_session.sql(aggregate_query)
+    return aggregated_df
+
+
+def compute_ranks(spark_session, aggregated_df) -> DataFrame:
+    aggregated_df.createOrReplaceTempView("aggregated_wiki_pageviews")
     """
     for sql knowledge :)
     http://www.silota.com/docs/recipes/sql-top-n-group.html
@@ -34,7 +49,7 @@ def compute_ranks(spark_session, cleaned_df) -> DataFrame:
                count_views,
                page_title,
                dense_rank() over (partition by domain_code order by count_views desc) as domain_rank
-        from cleaned_wiki_pageviews) ranks
+        from aggregated_wiki_pageviews) ranks
     where domain_rank <= 3;
     """
     logger.info(f"compute pageviews rank with query : {rank_query}")
@@ -47,4 +62,5 @@ def transform_wiki_pageviews(
 ) -> DataFrame:
     data_df, blacklist_df = data
     cleaned_df = data_clean(spark_session, data_df, blacklist_df)
-    return compute_ranks(spark_session, cleaned_df)
+    aggregated_df = aggregate_pageviews_by_count_views(spark_session, cleaned_df)
+    return compute_ranks(spark_session, aggregated_df)

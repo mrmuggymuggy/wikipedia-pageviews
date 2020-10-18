@@ -13,20 +13,18 @@ RUN zip -r dependencies.zip jobs \
 ### spark image
 FROM bitnami/spark:3.0.1
 
-#USER root
+USER root
 WORKDIR /workspace
 
 COPY requirements.txt .
-#RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # copy Python dependecies and libs
 COPY --from=builder /mnt/dependencies.zip /workspace/dist/dependencies.zip
-
-# copy all Spark jobs
+# copy Spark jobs
 COPY ./jobs/ /workspace/jobs/
-COPY ./configs /workspace/configs
 
-#USER 1001
+USER 1001
 # provide entrypoint file
 COPY ./scripts/entrypoint.sh /workspace/scripts/entrypoint.sh
 

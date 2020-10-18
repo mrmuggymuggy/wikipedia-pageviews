@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
-: "${PROPERTIES_FILE:="/workspace/configs/spark.properties"}"
 : "${SPARK_DRIVER_PORT:="35861"}"
 : "${PYTHON_FILE:="/opt/example/python/pi.py"}"
 : "${PY_FILES:="/workspace/dist/dependencies.zip"}"
 : "${SPARK_MODE:="client"}"
 
 export \
-  PROPERTIES_FILE \
   SPARK_DRIVER_PORT \
   PYTHON_FILE \
   PY_FILES \
@@ -47,6 +45,9 @@ function ensure_localmode() {
 
 ensure SPARK_MODE
 ensure SPARK_HOME
+ensure SPARK_PROPERTIES
+
+echo "${SPARK_PROPERTIES}" > /tmp/spark.properties
 
 set -o xtrace
 
@@ -56,7 +57,7 @@ case "${SPARK_MODE}" in
     $SPARK_HOME/bin/spark-submit \
     --name $SERVICE_NAME \
     --conf spark.pyspark.python=$PYTHIN_BIN \
-    --properties-file $PROPERTIES_FILE \
+    --properties-file /tmp/spark.properties \
     --py-files $PY_FILES \
     $PYTHON_FILE
     ;;

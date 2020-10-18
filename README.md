@@ -31,6 +31,7 @@ Create a branch will automatically deploy it on ew1d2 cluster, data-flux-dev nam
 
 ## OPEN QUESTIONS
 About rank, not quite sure if it's RANK, DENSE_RANK or row_number
+run for daily run demand lot of resources, ensure /tmp has more
 
 ## How I dev this app
 I use a jupyter notebook to scatch the application, the notebook is in jupyter-notebook folder, you can see my dev process there by run it:
@@ -63,6 +64,7 @@ Setup monitoring base on spark metrics
 CI/CD pipeline for release or rollback
 Tuning spark sql query plan to find more optimize query
 could try use pandas for more optimized dataframe operations
+use sensor to sense presence of new files instead of schedule for better fault tolorance
 
 * What might change about your solution if this application needed to run automatically for each hour of the day?
 nothing much, as the application is not responsible for job schedule
