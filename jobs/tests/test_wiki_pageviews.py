@@ -3,7 +3,7 @@ import pandas as pd
 from jobs.wiki_pageviews.wiki_pageviews_model import (
     compute_ranks,
     data_clean,
-    aggregate_pageviews_by_count_views,
+    aggregate_pageviews,
 )
 from jobs.wiki_pageviews.wiki_pageviews_config import (
     data_schema,
@@ -58,7 +58,7 @@ def test_data_clean(spark_session):
     )
 
 
-def test_aggregate_pageviews_by_count_views(spark_session):
+def test_aggregate_pageviews(spark_session):
     data = [
         ("fr.m", "Relations_entre_Israël_et_la_Syrie", 10, 0),
         ("fr.m", "Relations_entre_judaïsme_et_christianisme", 2, 0),
@@ -90,7 +90,7 @@ def test_aggregate_pageviews_by_count_views(spark_session):
     ]
 
     df_data = spark_session.createDataFrame(data, schema=data_schema)
-    result_df = aggregate_pageviews_by_count_views(spark_session, df_data).toPandas()
+    result_df = aggregate_pageviews(spark_session, df_data).toPandas()
     expected_result_df = spark_session.createDataFrame(
         expected_result, schema=["domain_code", "page_title", "count_views"]
     ).toPandas()
@@ -119,7 +119,7 @@ def test_compute_ranks(spark_session):
         ("fr.m", 16, "Relations_entre_juifs_et_musulmans", 1),
         ("fr.m", 10, "Relations_entre_Israël_et_la_Syrie", 2),
         ("fr.m", 10, "Relations_entre_l'Algérie_et_le_Maroc", 2),
-        ("fr.m", 2, "Relations_entre_judaïsme_et_christianisme", 3),
+        ("fr.m", 2, "Relations_entre_judaïsme_et_christianisme", 4),
     ]
 
     df_data = spark_session.createDataFrame(data, schema=data_schema)

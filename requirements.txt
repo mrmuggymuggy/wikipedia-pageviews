@@ -1,2 +1,1 @@
 boto3==1.15.17
-python-dateutil==2.8.1

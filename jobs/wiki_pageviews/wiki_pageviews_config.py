@@ -1,19 +1,26 @@
 """
-ETL functions for wikipedia pageviews
+Wikipedia pageviews spark app configuration
+Parse input env vars
 """
 import os, sys, logging
 from pyspark.sql.types import LongType, StringType, StructType
-import dateutil.parser
+from datetime import datetime
 from distutils.util import strtobool
 
 APP_NAME = os.getenv("APP_NAME", "wiki_pageviews")
-SOURCE_URL_PREFIX = os.getenv("SOURCE_URL_PREFIX", "to_be_set_in_run_time")
-BLACKLIST_URL_IN = os.getenv("BLACKLIST_URL_IN", "to_be_set_in_run_time")
-PATH_OUT_PREFIX = os.getenv("PATH_OUT_PREFIX", "to_be_set_in_run_time")
+SOURCE_URL_PREFIX = os.getenv(
+    "SOURCE_URL_PREFIX", "https://dumps.wikimedia.org/other/pageviews"
+)
+BLACKLIST_URL_IN = os.getenv(
+    "BLACKLIST_URL_IN",
+    "https://s3.amazonaws.com/dd-interview-data/data_engineer/wikipedia/blacklist_domains_and_pages",
+)
+
+PATH_OUT_PREFIX = os.getenv("PATH_OUT_PREFIX", "/mnt/out")
 HOURLY = strtobool(os.getenv("HOURLY", "True"))
 TOP_RANK = int(os.getenv("TOP_RANK", "25"))
 # fromisoformat only supported with python 3.7
-EXECUTION_DATETIME = dateutil.parser.parse(
+EXECUTION_DATETIME = datetime.fromisoformat(
     os.getenv("EXECUTION_DATETIME", "2020-01-21T11:00:00")
 )
 FORCE_REPROCESS = strtobool(os.getenv("FORCE_REPROCESS", "False"))

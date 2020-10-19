@@ -32,12 +32,13 @@ Create a branch will automatically deploy it on ew1d2 cluster, data-flux-dev nam
 ## OPEN QUESTIONS
 About rank, not quite sure if it's RANK, DENSE_RANK or row_number
 run for daily run demand lot of resources, ensure /tmp has more
-
+https://codingsight.com/similarities-and-differences-among-rank-dense_rank-and-row_number-functions/
 ## How I dev this app
 I use a jupyter notebook to scatch the application, the notebook is in jupyter-notebook folder, you can see my dev process there by run it:
 ```
 task jupyter
 ```
+considered to deploy as kubernetes cronjob but it doesn't allow backfilling, so discard it
 
 ## requirements
 Build a simple application that we can run to compute the top 25 pages on Wikipedia for each of the Wikipedia sub-domains:

@@ -23,7 +23,7 @@ tasks:
 
   lint:
     cmds:
-      - pylint --exit-zero python
+      - pylint --exit-zero jobs
 
   format:
     cmds:
@@ -66,65 +66,21 @@ tasks:
     cmds:
       - if minikube status | grep Running; then echo "minikube running..."; else echo "starting minikube"; minikube start; fi
 
-
-  spark.helm.deploy:
-    summary: |
-      When run locally, you need to specify environment variables
-      eg. KUBE_CONTEXT=ew1p3 NAMESPACE=data-flux ENV=prod SERVICES=k8s-spark-example task spark.helm.deploy
-    deps: [set.k8s.context]
-    cmds:
-      - >
-        {{$helm_chart_name := .HELM_CHART_NAME}}
-        {{range $service := .SERVICES | trim | splitLines -}}
-          helm upgrade {{$service}} {{$helm_chart_name}} \
-            --namespace $NAMESPACE \
-            --install \
-            --atomic \
-            --cleanup-on-fail \
-            --force \
-            --history-max 3 \
-            --wait \
-            --timeout 60s \
-            --set-string spark_driver.image.repository=$DOCKER_REGISTRY/data/flux/$DOCKER_IMAGE \
-            --set-string spark_driver.image.tag=$COMMIT \
-            --values ./helm-values/{{$service}}/values-$ENV.yaml;
-        {{end}}
-    vars:
-      SERVICES: "{{default .DEFAULT_SERVICES .SERVICES}}"
-
-  spark.helm.template:
-    deps: [set.k8s.context]
-    cmds:
-      - >
-        {{$helm_chart_name := .HELM_CHART_NAME}}
-        {{range $service := .SERVICES | trim | splitLines -}}
-          helm template {{$service}} {{$helm_chart_name}} \
-            --namespace $NAMESPACE \
-            --set-string spark_driver.image.repository=$DOCKER_REGISTRY/data/flux/$DOCKER_IMAGE \
-            --set-string spark_driver.image.tag=$COMMIT \
-            --values ./helm-values/{{$service}}/values-$ENV.yaml;
-        {{end}}
-    vars:
-      SERVICES: "{{default .DEFAULT_SERVICES .SERVICES}}"
-
-  spark.helm.undeploy:
-    summary: |
-      When run locally, you need to specify environment variables
-      eg. KUBE_CONTEXT=ew1p3 NAMESPACE=data-flux ENV=prod SERVICES=k8s-spark-example task spark.helm.undeploy
-
-    deps: [set.k8s.context]
-    cmds:
-      - >
-        {{range $service := .SERVICES | trim | splitLines -}}
-          helm uninstall --namespace $NAMESPACE {{$service}}
-        {{end}}
-    vars:
-      SERVICES: "{{default .DEFAULT_SERVICES .SERVICES}}"
-
   set.k8s.context:
     cmds:
       - kubectl config set-context {{.KUBE_CONTEXT}} --namespace=$NAMESPACE
       - kubectl config use-context {{.KUBE_CONTEXT}} --namespace=$NAMESPACE
+
+  airflow.deploy:
+    cmds:
+      #my helm chart repo
+      - helm repo add mrmuggymuggy https://mrmuggymuggy.github.io/helm-charts/
+      - helm repo update
+      - helm install airflow mrmuggymuggy/airflow --wait --timeout 600s
+
+  airflow.undeploy:
+    cmds:
+      - helm uninstall airflow
 
   default:
     cmds:

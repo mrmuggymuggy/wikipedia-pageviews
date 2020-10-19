@@ -3,7 +3,10 @@ ETL functions for wikipedia pageviews
 """
 from pyspark.sql.dataframe import DataFrame
 from typing import Tuple
-from jobs.wiki_pageviews.wiki_pageviews_config import logger
+from jobs.wiki_pageviews.wiki_pageviews_config import (
+    TOP_RANK,
+    logger,
+)
 
 
 def data_clean(spark_session, data_df, blacklist_df) -> DataFrame:
@@ -45,7 +48,7 @@ def aggregate_pageviews(spark_session, cleaned_df) -> DataFrame:
     aggregate_query = """
     SELECT  domain_code,
             page_title,
-            Sum(count_views) as count_views
+            SUM(count_views) as count_views
     FROM cleaned_wiki_pageviews
     GROUP BY domain_code, page_title;
     """
@@ -68,14 +71,14 @@ def compute_ranks(spark_session, aggregated_df) -> DataFrame:
     http://www.silota.com/docs/recipes/sql-top-n-group.html
     #maybe use dense_rank or rank
     """
-    rank_query = """
+    rank_query = f"""
     SELECT * FROM (
         SELECT domain_code,
                count_views,
                page_title,
-               dense_rank() over (partition by domain_code ORDER BY count_views DESC) AS domain_rank
+               RANK() over (partition by domain_code ORDER BY count_views DESC) AS domain_rank
         FROM aggregated_wiki_pageviews) ranks
-    WHERE domain_rank <= 3;
+    WHERE domain_rank <= {TOP_RANK};
     """
     logger.info(f"compute pageviews rank with query : {rank_query}")
     ranked_df = spark_session.sql(rank_query)

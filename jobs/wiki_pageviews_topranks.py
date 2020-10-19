@@ -1,14 +1,17 @@
 """
 ETL python job for wikipedia pageviews top ranks
 """
+import sys
+from typing import Tuple
+from pyspark.sql import DataFrame, SparkSession
+from pyspark import SparkFiles
+
 from jobs.wiki_pageviews.wiki_pageviews_config import (
     APP_NAME,
     SOURCE_URL_PREFIX,
     BLACKLIST_URL_IN,
     PATH_OUT_PREFIX,
-    HOURLY,
     EXECUTION_DATETIME,
-    TOP_RANK,
     FORCE_REPROCESS,
     data_schema,
     blacklist_schema,
@@ -24,10 +27,6 @@ from jobs.wiki_pageviews.utils import (
     pageviews_are_processed,
     add_pageviews_fileurls,
 )
-from typing import Tuple
-from pyspark.sql import DataFrame, SparkSession
-from pyspark import SparkFiles
-import sys
 
 
 def main():
@@ -43,7 +42,9 @@ def main():
     data_transformed = transform_data(spark, data_tuple)
     load_data(data_transformed)
     logger.info(
-        f"Starting batch query to compute wikipedia pageview ranks with {SOURCE_URL_PREFIX} as source and {PATH_OUT_PREFIX} as output path."
+        f"""Starting batch query to compute wikipedia pageview ranks
+        with {SOURCE_URL_PREFIX} as source
+        and {PATH_OUT_PREFIX} as output path."""
     )
     spark.stop()
 
