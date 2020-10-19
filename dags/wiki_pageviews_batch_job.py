@@ -31,10 +31,6 @@ ENV = os.environ.get("ENV")
 docker_image = "mrmuggymuggy/wikipedia_pageviews:5d2d671"
 
 envs = {
-    "SERVICE_NAME": DAG_NAME,
-    "PYTHON_FILE": "/workspace/jobs/wiki_pageviews_to_s3.py",
-    "SPARK_MODE": "local",
-    "SERVICE_NAME": DAG_NAME,
     "APP_NAME": DAG_NAME,
     "SOURCE_URL_PREFIX": "https://dumps.wikimedia.org/other/pageviews",
     "BLACKLISG_URL_IN": "https://s3.amazonaws.com/dd-interview-data/data_engineer/wikipedia/blacklist_domains_and_pages",
@@ -52,10 +48,10 @@ args = {
 with DAG(dag_id=DAG_NAME, default_args=args, schedule_interval="30 0 * * *") as dag:
 
     # Limit resources on this operator/task with node affinity & tolerations
-    spark_batch_job_local_mode = KubernetesPodOperator(
+    spark_batch_job_kubespark = KubernetesPodOperator(
         namespace=os.environ["AIRFLOW__KUBERNETES__NAMESPACE"],
         name=DAG_NAME,
-        task_id=f"{DAG_NAME}_local_mode",
+        task_id=f"{DAG_NAME}-kubespark",
         image=docker_image,
         image_pull_policy="IfNotPresent",
         env_vars=envs,
@@ -65,4 +61,4 @@ with DAG(dag_id=DAG_NAME, default_args=args, schedule_interval="30 0 * * *") as 
         hostnetwork="False",
     )
 
-    spark_batch_job_local_mode
+    spark_batch_job_kubespark

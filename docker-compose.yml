@@ -3,15 +3,14 @@ services:
   wikipedia_pageviews:
     build: .
     environment:
-      SPARK_MODE: local
-      SERVICE_NAME: wikipedia_pageviews
       APP_NAME: wikipedia_pageviews
       SOURCE_URL_PREFIX: "https://dumps.wikimedia.org/other/pageviews"
       BLACKLIST_URL_IN: https://s3.amazonaws.com/dd-interview-data/data_engineer/wikipedia/blacklist_domains_and_pages
-      PATH_OUT: /mnt/out
-      EXECUTION_DATETIME: "2020-01-21T11:00:00"
-      HOURLY: "False"
-      PYTHON_FILE: /workspace/jobs/wiki_pageviews_to_s3.py
+      PATH_OUT_PREFIX: s3a://fxt-data-flux-mytests-manuel-tobedelete/outputs
+      EXECUTION_DATETIME: "2020-01-21T23:00:00"
+      HOURLY: "true"
+      FORCE_REPROCESS: "false"
+      PYTHON_FILE: /workspace/jobs/wiki_pageviews_topranks.py
       SPARK_PROPERTIES: |-
         spark.master=local[8]
         spark.driver.memory=14g
@@ -22,8 +21,12 @@ services:
         spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version=2
         spark.speculation=false
         spark.serializer=org.apache.spark.serializer.KryoSerializer
+        #enable for local run to access s3, don't use with k8s pod(use kubeiam)
+        spark.hadoop.fs.s3a.aws.credentials.provider=com.amazonaws.auth.DefaultAWSCredentialsProviderChain
     volumes:
         - /tmp:/mnt
+        #it's for local run write to s3, mount aws credentials
+        - "${HOME}/.aws/:/home/jovyan/.aws/"
 
   wikipedia_pageviews_tests:
     build:
@@ -32,3 +35,11 @@ services:
     volumes:
         - .:/mnt
     entrypoint:  ["pytest", "/mnt/jobs/tests/"]
+
+  wikipedia_pageviews_jupyter:
+    #spark 3.0.1, for scratch code
+    image: jupyter/pyspark-notebook:feacdbfc2e89
+    volumes:
+        - ${PWD}/jupyter-notebook:/home/jovyan/work
+    ports:
+      - "8888:8888"

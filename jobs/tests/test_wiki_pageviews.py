@@ -45,7 +45,6 @@ def test_data_clean(spark_session):
     df_blacklists = spark_session.createDataFrame(
         blacklist_data, schema=blacklist_schema
     )
-    # nested columns need to be read as JSON, therefore toJSON()
     result_df = data_clean(spark_session, df_data, df_blacklists).toPandas()
     expected_result_df = spark_session.createDataFrame(
         expected_result, schema=data_schema
@@ -60,7 +59,6 @@ def test_data_clean(spark_session):
 
 
 def test_aggregate_pageviews_by_count_views(spark_session):
-    """ test the availability/passing of different contexts """
     data = [
         ("fr.m", "Relations_entre_Israël_et_la_Syrie", 10, 0),
         ("fr.m", "Relations_entre_judaïsme_et_christianisme", 2, 0),
@@ -102,7 +100,6 @@ def test_aggregate_pageviews_by_count_views(spark_session):
 
 
 def test_compute_ranks(spark_session):
-    """ test the availability/passing of different contexts """
     data = [
         ("fr.m", "Relations_entre_Israël_et_la_Syrie", 10, 0),
         ("fr.m", "Relations_entre_judaïsme_et_christianisme", 2, 0),

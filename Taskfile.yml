@@ -40,7 +40,7 @@ tasks:
       Local development with jupyter-notebook, fast feedback MVP
     cmds:
       #jupyter with latest spark
-      - docker run --rm -p 8888:8888 -v `pwd`/jupyter-notebook:/home/jovyan/work jupyter/pyspark-notebook:feacdbfc2e89
+      - docker-compose up --abort-on-container-exit wikipedia_pageviews_jupyter
 
   local.run:
     summary: |
