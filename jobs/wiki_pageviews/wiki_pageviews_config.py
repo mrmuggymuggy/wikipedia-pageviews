@@ -19,7 +19,6 @@ BLACKLIST_URL_IN = os.getenv(
 PATH_OUT_PREFIX = os.getenv("PATH_OUT_PREFIX", "/mnt/out")
 HOURLY = strtobool(os.getenv("HOURLY", "True"))
 TOP_RANK = int(os.getenv("TOP_RANK", "25"))
-# fromisoformat only supported with python 3.7
 EXECUTION_DATETIME = datetime.fromisoformat(
     os.getenv("EXECUTION_DATETIME", "2020-01-21T11:00:00")
 )

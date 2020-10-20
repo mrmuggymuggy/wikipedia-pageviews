@@ -4,16 +4,16 @@
 Wikipedia pageview dag using the Kubernetes Executor
 Hourly run schedule
 """
-import os
+import os, json, yaml
+from datetime import datetime, timedelta
 
 import airflow
 from airflow.models import DAG
 from airflow.contrib.operators.kubernetes_pod_operator import KubernetesPodOperator
 
-DAG_NAME = "wikipedia-pageviews"
-ENV = os.environ.get("ENV")
+DAG_NAME = "wiki_pageviews_batch_job"
 
-docker_image = "mrmuggymuggy/wikipedia_pageviews:5d2d671"
+docker_image = "mrmuggymuggy/wikipedia_pageviews:0.1.0"
 
 # spark properties for the task
 spark_properties = """
@@ -37,32 +37,62 @@ envs = {
     "APP_NAME": DAG_NAME,
     "SOURCE_URL_PREFIX": "https://dumps.wikimedia.org/other/pageviews",
     "BLACKLISG_URL_IN": "https://s3.amazonaws.com/dd-interview-data/data_engineer/wikipedia/blacklist_domains_and_pages",
-    "PATH_OUT_PREFIX": "/mnt/out",
+    "PATH_OUT_PREFIX": "s3a://fxt-data-flux-mytests-manuel-tobedelete/outputs",
     "EXECUTION_DATETIME": "{{ ts }}",
     "HOURLY": "True",
     "FORCE_REPROCESS": "false",
     "SPARK_PROPERTIES": spark_properties,
+    "AWS_IAM_ARN": "arn:aws:iam::453148432190:role/flixos/k8s/cujo-raw-to-master-spark-dev",
+    # "AWS_IAM_ARN": "xxxxxxIAM_ARNxxxxxx",
 }
+
+datadog_autodiscovery_conf = """
+init_config: {}
+logs: []
+instances:
+  - spark_url: "http://%%host%%:4040"
+    spark_cluster_mode: "spark_driver_mode"
+    cluster_name: k8s-spark
+"""
+
+datadog_conf_dict = yaml.safe_load(datadog_autodiscovery_conf)
 
 args = {
     "owner": "Airflow",
     "start_date": airflow.utils.dates.days_ago(2),
+    "retries": 3,
+    "retry_delay": timedelta(seconds=600),
+    "annotations": {
+        "iam.amazonaws.com/role": envs["AWS_IAM_ARN"],
+        f"ad.datadoghq.com/{DAG_NAME}.init_configs": json.dumps(
+            datadog_conf_dict["init_config"]
+        ),
+        f"ad.datadoghq.com/{DAG_NAME}.logs": json.dumps(datadog_conf_dict["logs"]),
+        f"ad.datadoghq.com/{DAG_NAME}.check_names": '["spark"]',
+        f"ad.datadoghq.com/{DAG_NAME}.check_names": json.dumps(
+            datadog_conf_dict["instances"]
+        ),
+    },
 }
 
-with DAG(dag_id=DAG_NAME, default_args=args, schedule_interval="30 * * * *") as dag:
-
-    # Limit resources on this operator/task with node affinity & tolerations
+with DAG(
+    dag_id=DAG_NAME,
+    default_args=args,
+    concurrency=3,
+    max_active_runs=3,
+    schedule_interval="30 * * * *",
+) as dag:
     spark_batch_job_kubespark = KubernetesPodOperator(
         namespace=os.environ["AIRFLOW__KUBERNETES__NAMESPACE"],
         name=DAG_NAME,
-        task_id=f"{DAG_NAME}-kubespark",
+        task_id=f"{DAG_NAME}_kubespark",
         image=docker_image,
         image_pull_policy="IfNotPresent",
+        service_account_name="airflow",
         env_vars=envs,
         resources={"request_memory": "4024Mi", "request_cpu": "100m"},
-        is_delete_operator_pod="True",
-        in_cluster="True",
-        hostnetwork="False",
+        is_delete_operator_pod=True,
+        in_cluster=True,
+        hostnetwork=False,
     )
-
     spark_batch_job_kubespark

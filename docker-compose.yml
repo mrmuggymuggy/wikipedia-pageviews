@@ -8,11 +8,11 @@ services:
       BLACKLIST_URL_IN: https://s3.amazonaws.com/dd-interview-data/data_engineer/wikipedia/blacklist_domains_and_pages
       PATH_OUT_PREFIX: /mnt/out
       EXECUTION_DATETIME: "2020-01-22T02:00:00"
-      HOURLY: "true"
+      HOURLY: "false"
       FORCE_REPROCESS: "false"
       SPARK_PROPERTIES: |-
         spark.master=local[8]
-        spark.driver.memory=14g
+        spark.driver.memory=8g
         spark.driver.maxResultSize=2g
         #file download and dispatch to executor time is long
         spark.sql.autoBroadcastJoinThreshold=-1

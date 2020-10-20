@@ -12,7 +12,7 @@ from jobs.wiki_pageviews.wiki_pageviews_config import (
 
 
 def test_data_clean(spark_session):
-    """ test the availability/passing of different contexts """
+    """ test data_clean() function """
     data = [
         ("fr.m", "Relations_entre_Israël_et_la_Syrie", 10, 0),
         ("fr.m", "Relations_entre_judaïsme_et_christianisme", 2, 0),
@@ -50,6 +50,7 @@ def test_data_clean(spark_session):
         expected_result, schema=data_schema
     ).toPandas()
     col_names = df_data.schema.names
+
     pd.testing.assert_frame_equal(
         result_df.set_index(col_names),
         expected_result_df.set_index(col_names),
@@ -59,6 +60,7 @@ def test_data_clean(spark_session):
 
 
 def test_aggregate_pageviews(spark_session):
+    """ test aggregate_pageviews() function """
     data = [
         ("fr.m", "Relations_entre_Israël_et_la_Syrie", 10, 0),
         ("fr.m", "Relations_entre_judaïsme_et_christianisme", 2, 0),
@@ -100,6 +102,7 @@ def test_aggregate_pageviews(spark_session):
 
 
 def test_compute_ranks(spark_session):
+    """ test compute_ranks() function """
     data = [
         ("fr.m", "Relations_entre_Israël_et_la_Syrie", 10, 0),
         ("fr.m", "Relations_entre_judaïsme_et_christianisme", 2, 0),

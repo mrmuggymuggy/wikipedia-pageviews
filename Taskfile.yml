@@ -31,6 +31,8 @@ tasks:
       - pre-commit run --all-files
 
   docker.build:
+    summary: |
+      Build docker image of spark ETL job
     cmds:
       - docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE:$VERSION .
 
@@ -53,6 +55,19 @@ tasks:
     cmds:
       - docker-compose up --abort-on-container-exit --build wikipedia_pageviews_tests
 
+  airflow.deploy:
+    deps: [set.k8s.context]
+    cmds:
+      #my helm chart repo
+      - helm repo add mrmuggymuggy https://mrmuggymuggy.github.io/helm-charts/
+      - helm repo update
+      - helm install airflow mrmuggymuggy/airflow --wait --timeout 600s
+
+  airflow.undeploy:
+    deps: [set.k8s.context]
+    cmds:
+      - helm uninstall airflow
+
   start.minikube:
     cmds:
       - if minikube status | grep Running; then echo "minikube running..."; else echo "starting minikube"; minikube start; fi
@@ -61,17 +76,6 @@ tasks:
     cmds:
       - kubectl config set-context {{.KUBE_CONTEXT}} --namespace=$NAMESPACE
       - kubectl config use-context {{.KUBE_CONTEXT}} --namespace=$NAMESPACE
-
-  airflow.deploy:
-    cmds:
-      #my helm chart repo
-      - helm repo add mrmuggymuggy https://mrmuggymuggy.github.io/helm-charts/
-      - helm repo update
-      - helm install airflow mrmuggymuggy/airflow --wait --timeout 600s
-
-  airflow.undeploy:
-    cmds:
-      - helm uninstall airflow
 
   default:
     cmds:
