@@ -41,6 +41,6 @@ services:
     image: jupyter/pyspark-notebook:feacdbfc2e89
     working_dir: /home/jovyan/work
     volumes:
-        - ${PWD}/jupyter-notebook:/home/jovyan/work
+      - ${PWD}/jupyter-notebook:/home/jovyan/work
     ports:
       - "8888:8888"
