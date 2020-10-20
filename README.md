@@ -1,37 +1,37 @@
-# Spark on Kubernetes - example app
+# Wikipedia pageviews ranking app
+This Project runs Spark job to compute wikipedia toprank pages for each domain
+Tech stack
+* Spark SQL (Spark 3.0.1)
+* Python 3.8
+* docker-compose
+* Airflow 1.10.10
+* Kubernetes
+* Taskfile(makefile like build tool)
 
-This is an example project running a Spark app on Kubernetes. It runs a PySpark job as spark driver deployment on Kubernetes. More information [here](https://spark.apache.org/docs/latest/running-on-kubernetes.html).
-
-This example contains two spark deployment mode:
-* local mode(helm-values/k8s-spark-local-example
-)
-* client mode(helm-values/k8s-spark-client-example
-)
-
-## run app locally
-
-Install local Kubernetes cluster first. Use [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/).
-
-Install `task` build tools [task](https://taskfile.dev/#/installation).
-
-Run locally:
+## Run the app locally
+Make sure you have docker-compose and task(https://taskfile.dev/#/) installed
+Application run and unit tests are in docker, so no other dependencies needed
+Local run:
 ```shell script
-task run.local
+task local.run
 ```
-Undeploy locally:
+Unit-tests local run:
 ```shell script
-task spark.helm.undeploy
+task unit-tests
 ```
-![](./k8s-spark.gif)
-
-## deploy on EKS Kubernetes cluster
-Edit `.gitlab-ci.yml` file to adapt it to deploy to your own k8s namespace, please read team plateform documentation for details about gitlab runner and Kubernetes.
-
-Create a branch will automatically deploy it on ew1d2 cluster, data-flux-dev namespace. Merge branch will deploy code on data-flux-stg and then to ew1p3 data-flux namespace.
+## Customized parameters and check outputs
+## How and Why I choose the tech tech stack
+1) spark sql
+## How I dev this app
+I use a jupyter notebook as code scatch pad, the notebook is in `jupyter-notebook` folder, you can see my dev process by run:
+```
+task jupyter
+```
+it will start a jupyter notebook in docker and mount my notebook
 
 ## OPEN QUESTIONS
 About rank, not quite sure if it's RANK, DENSE_RANK or row_number
-run for daily run demand lot of resources, ensure /tmp has more
+run for daily run demand lot of resources
 https://codingsight.com/similarities-and-differences-among-rank-dense_rank-and-row_number-functions/
 ## How I dev this app
 I use a jupyter notebook to scatch the application, the notebook is in jupyter-notebook folder, you can see my dev process there by run it:
@@ -64,14 +64,14 @@ For your solution, explain:
 Setup monitoring base on spark metrics
 CI/CD pipeline for release or rollback
 Tuning spark sql query plan to find more optimize query
-could try use pandas for more optimized dataframe operations
-use sensor to sense presence of new files instead of schedule for better fault tolorance
 
 * What might change about your solution if this application needed to run automatically for each hour of the day?
-nothing much, as the application is not responsible for job schedule
+I need to adjust airflow dag to use sensor to detect the availability of new files instead of the schedule run, as the pageviews files might not be available right away
+will consider output parquet files
 * How would you test this application?
 unit tests, integration tests in staging
 * How you’d improve on this application design?
-would consider to make backfilling using UI instead of command-line
-consider to make spark stack transparent, so business users with only sql knowledge are able to run spark ETL without programming knowledge
+may consider to install backfilling UI pluggin to airflow to not run backfill on command-line
+may consider to make spark stack transparent, so business users with only sql knowledge are able to schedule spark ETL without programming and ops knowledge
 may consider to find a third party payed solution in market to spare engineer work
+may consider simply dump raw data as partitioned day/hours parquet files to data-lake(snowflake) and schedule sql jobs, probably more expensive but more transparent for data department

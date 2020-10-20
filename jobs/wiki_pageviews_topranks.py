@@ -30,22 +30,24 @@ from jobs.wiki_pageviews.utils import (
 
 
 def main():
+    """
+    Create spark session and run SPARK ETL
+    """
     data_is_processed = pageviews_are_processed()
     if data_is_processed and (not FORCE_REPROCESS):
         logger.info(
             f"pageviews at {EXECUTION_DATETIME} have been processed and FORCE_REPROCESS flag is off"
         )
         sys.exit(0)
-
     spark = SparkSession.builder.appName(APP_NAME).getOrCreate()
-    data_tuple = extract_data(spark)
-    data_transformed = transform_data(spark, data_tuple)
-    load_data(data_transformed)
     logger.info(
         f"""Starting batch query to compute wikipedia pageview ranks
         with {SOURCE_URL_PREFIX} as source
         and {PATH_OUT_PREFIX} as output path."""
     )
+    data_tuple = extract_data(spark)
+    data_transformed = transform_data(spark, data_tuple)
+    load_data(data_transformed)
     spark.stop()
 
 

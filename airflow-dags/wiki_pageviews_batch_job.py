@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 """
-This is an example dag for using the Kubernetes Executor.
+Wikipedia pageview dag using the Kubernetes Executor
+Hourly run schedule
 """
 import os
 
@@ -14,9 +15,10 @@ ENV = os.environ.get("ENV")
 
 docker_image = "mrmuggymuggy/wikipedia_pageviews:5d2d671"
 
+# spark properties for the task
 spark_properties = """
 spark.master=local[8]
-spark.driver.memory=14g
+spark.driver.memory=4g
 spark.driver.maxResultSize=2g
 #file download and dispatch to executor time is long
 spark.sql.autoBroadcastJoinThreshold=-1
@@ -29,6 +31,8 @@ spark.serializer=org.apache.spark.serializer.KryoSerializer
 #spark.hadoop.fs.s3a.aws.credentials.provider=com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 """
 
+# environment variable for dag task run
+# EXECUTION_DATETIME using airflow macro ts: https://airflow.apache.org/docs/stable/macros-ref
 envs = {
     "APP_NAME": DAG_NAME,
     "SOURCE_URL_PREFIX": "https://dumps.wikimedia.org/other/pageviews",
@@ -37,7 +41,6 @@ envs = {
     "EXECUTION_DATETIME": "{{ ts }}",
     "HOURLY": "True",
     "FORCE_REPROCESS": "false",
-    "PYTHON_FILE": "/workspace/jobs/wiki_pageviews_to_s3.py",
     "SPARK_PROPERTIES": spark_properties,
 }
 
@@ -46,7 +49,7 @@ args = {
     "start_date": airflow.utils.dates.days_ago(2),
 }
 
-with DAG(dag_id=DAG_NAME, default_args=args, schedule_interval="30 0 * * *") as dag:
+with DAG(dag_id=DAG_NAME, default_args=args, schedule_interval="30 * * * *") as dag:
 
     # Limit resources on this operator/task with node affinity & tolerations
     spark_batch_job_kubespark = KubernetesPodOperator(

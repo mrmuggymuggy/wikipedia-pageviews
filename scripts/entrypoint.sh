@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-: "${PYTHON_FILE:="/opt/example/python/pi.py"}"
+: "${PYTHON_FILE:="/workspace/jobs/wiki_pageviews_topranks.py"}"
 : "${PY_FILES:="/workspace/dist/dependencies.zip"}"
 
 export \

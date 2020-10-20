@@ -7,8 +7,7 @@ env:
   ENV: '{{default "minikube" .ENV}}'
   DOCKER_REGISTRY: '{{default "mrmuggymuggy" .DOCKER_REGISTRY}}'
   NAMESPACE: '{{default "default" .NAMESPACE}}'
-  COMMIT:
-    sh: git rev-parse --short HEAD
+  VERSION: 0.1.0
 
 vars:
   KUBE_CONTEXT: '{{default "minikube" .KUBE_CONTEXT}}'
@@ -17,7 +16,7 @@ vars:
     wikipedia-pageviews
 
 includes:
-  dags: ./dags
+  dags: ./airflow-dags
 
 tasks:
 
@@ -33,7 +32,7 @@ tasks:
 
   docker.build:
     cmds:
-      - docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE:$COMMIT .
+      - docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE:$VERSION .
 
   jupyter:
     summary: |
@@ -53,14 +52,6 @@ tasks:
       Run the unit-tests locally with docker-compose
     cmds:
       - docker-compose up --abort-on-container-exit --build wikipedia_pageviews_tests
-
-  local.deploy:
-    deps: [set.k8s.context]
-    cmds:
-      - |
-        eval $(minikube docker-env)
-        task docker:build
-        task spark.helm.deploy
 
   start.minikube:
     cmds:

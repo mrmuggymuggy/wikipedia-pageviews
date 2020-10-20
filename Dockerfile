@@ -18,8 +18,7 @@ WORKDIR /workspace
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-#add hadoop-aws for read/write s3 so don't need to download it
-#everytime on job's spark-submit
+#hadoop-aws for read/write s3 so don't need to download it everytime on job's spark-submit
 RUN echo "System.exit(0)" > /tmp/dependencies.scala; \
 	$SPARK_HOME/bin/spark-shell --packages \
 	org.apache.hadoop:hadoop-aws:3.2.0 \

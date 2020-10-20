@@ -6,11 +6,10 @@ services:
       APP_NAME: wikipedia_pageviews
       SOURCE_URL_PREFIX: "https://dumps.wikimedia.org/other/pageviews"
       BLACKLIST_URL_IN: https://s3.amazonaws.com/dd-interview-data/data_engineer/wikipedia/blacklist_domains_and_pages
-      PATH_OUT_PREFIX: s3a://fxt-data-flux-mytests-manuel-tobedelete/outputs
+      PATH_OUT_PREFIX: /mnt/out
       EXECUTION_DATETIME: "2020-01-22T02:00:00"
-      HOURLY: "false"
+      HOURLY: "true"
       FORCE_REPROCESS: "false"
-      PYTHON_FILE: /workspace/jobs/wiki_pageviews_topranks.py
       SPARK_PROPERTIES: |-
         spark.master=local[8]
         spark.driver.memory=14g
@@ -40,6 +39,7 @@ services:
   wikipedia_pageviews_jupyter:
     #spark 3.0.1, code scatch pad
     image: jupyter/pyspark-notebook:feacdbfc2e89
+    working_dir: /home/jovyan/work
     volumes:
         - ${PWD}/jupyter-notebook:/home/jovyan/work
     ports:
