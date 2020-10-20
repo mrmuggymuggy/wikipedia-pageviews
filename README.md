@@ -4,10 +4,10 @@ This Project runs Spark job to compute wikipedia toprank pages for each domain
 Tech stack
 * Spark SQL(Spark 3.0.1) -> ETL library
 * Python 3.8
-* docker-compose -> for local run, unit-test and jupyter-notebook
+* docker-compose 1.27.0 -> for local run, unit-test and jupyter-notebook
 * Airflow 1.10.10 -> for scheduling spark job run
 * Kubernetes -> Airflow schedules spark task to kubernetes
-* Helm -> Airflow is deployed with helm chart
+* Helm 3 -> Airflow is deployed with helm chart
 * Taskfile -> A makefile like build tool
 
 ## Run the app locally
@@ -21,7 +21,7 @@ Unit-tests run: ```task unit-tests```
 
 For daily run, make sure you have enough resource(cpu/RAM) on your machine, have a look at `docker-compose` file, the daily run require 8G memory, takes around 25 minutes to finish process
 
-## Customize parameters and check outputs
+## Customize parameters, outputs path and format
 The app read configurations from environment variables, see code `./jobs/wiki_pageviews/wiki_pageviews_config.py`
 
 | Environment variables 	| Default                                                                                        	| Meaning                                                                                                                                  	|
@@ -33,44 +33,49 @@ The app read configurations from environment variables, see code `./jobs/wiki_pa
 | EXECUTION_DATETIME    	| 2020-01-22T02:00:00                                                                            	| Given isoformat Datetime to process The same format as `ts` airflow macro: http://airflow.apache.org/docs/stable/macros-ref.html         	|
 | HOURLY                	| true                                                                                           	| Whether to process hourly or daily, daily when hourly is false                                                                           	|
 | FORCE_REPROCESS       	| false                                                                                          	| Whether to force reprocess even the given date is processed                                                                              	|
-| SPARK_PROPERTIES      	| spark.master=local[8] spark.driver.memory=14g spark.driver.maxResultSize=2g                    	| Spark properties taken by the applications, for details : https://spark.apache.org/docs/latest/configuration.html#application-properties 	|
+| SPARK_PROPERTIES      	| spark.master=local[8]<br>spark.driver.memory=14g<br>spark.driver.maxResultSize=2g                    	| Spark properties taken by the applications, for details : https://spark.apache.org/docs/latest/configuration.html#application-properties 	|
 
-With the default local run on an given hour, the partitioned output path can be found in
+With the default local run(write to local file system) on an given hour, the partitioned output path can be found in:
 
 ```
 /tmp/out/format=csv/year=xxx/month=xx/day=xx/hour=xx
 ```
 
-I mounted the host `/tmp` to the docker `/mnt`, thus the result can be found on you host `/tmp`, see `docker-compose.yml` volumes section of wikipedia_pageviews service
+I mount the host `/tmp` to the docker `/mnt`, thus the result can be found on you host `/tmp`, see `docker-compose.yml` volumes, wikipedia_pageviews service section for details.
 
-The output support S3 target as well, you will get same partitioned output path as S3 key, Make sure that you have assumed AWS IAM role which allows you to access to s3, I mount your `"${HOME}/.aws` folder to the docker image, with `spark.hadoop.fs.s3a.aws.credentials.provider=com.amazonaws.auth.DefaultAWSCredentialsProviderChain` as spark property, it can write to S3
+The output support S3 target as well, you will get same partitioned output path as S3 key, Make sure that you have assumed AWS IAM role on your local machine which allows to access to s3, I mount `"${HOME}/.aws` folder to the docker image, with spark property : `spark.hadoop.fs.s3a.aws.credentials.provider=com.amazonaws.auth.DefaultAWSCredentialsProviderChain`, it can write to S3
 > :Note: output file is in **gzipped csv** format, read with `zcat`
 
 ## Design And architecture
-it's a simple spark ETL job. I choose Spark Sql for its simplicity, Spark sql underline uses spark API, it has no impact on the app performance. All fonctional codes(Data transformation) are in SQL, it makes easier to share data transformation logics with Data analysts and Business intellegence people, it also makes data transformation logic portable. e.g if we want to simply dump pageviews data into datalake, we can still use the same SQL code to calculate top ranks
+it's a simple spark ETL job. I choose Spark SQL for its simplicity, Spark SQL underline uses spark API, it has no impact on the app performance. All fonctional codes(Data transformation) are in SQL, it makes easier to share data transformation logic with Data analysts and Business intellegence people(they might have no programming knowledge), it also makess data transformation logic portable. e.g if we want to simply dump pageviews data into datalake as parquet files, we can still use the same SQL code to calculate top ranks.
 
-I choose to use Airflow's [kubernetes operator](https://airflow.apache.org/docs/stable/kubernetes.html) to schedule Spark tasks to process a range of dates/hours, it is simple, clear and transparent. I have considered to use kubernetes cronjob for automatical scheduled run, but this solution don't support running the app for a specified range of date in the past. With airflow dag, you can `backfill` for a specified range of date
+I choose to use Airflow's [kubernetes operator](https://airflow.apache.org/docs/stable/kubernetes.html) to schedule Spark tasks to process a range of dates/hours, it is simple, clear and transparent. I have considered to use kubernetes cronjob for automatical scheduled run, but this solution don't support running the app for a specified range of date in the past. With airflow dag, you can `backfill` for a specified range of date.
 
 ## How did I dev this app ?
-I used a jupyter notebook(https://hub.docker.com/r/jupyter/pyspark-notebook) as code scatch pad, the notebook is in `./jupyter-notebook` folder, you can see my dev process by run:
+I used a jupyter notebook image with pyspark support(https://hub.docker.com/r/jupyter/pyspark-notebook) as code scatch pad, the notebook is in `./jupyter-notebook` folder, you can see my dev process by run:
 ```
 task jupyter
 ```
 it starts the jupyter notebook with docker-compose and mount the notebook folder into docker
 
 ## OPEN QUESTIONS
-For many domains; pageviews counts are low, thus have many ties for same ranks, it brings potentially noises to the result. e.g all pages of domain `x` has only 1 count_views, then all pages will be found in the toprank dataframe.
+For many domains, the pageviews counts are low, thus have many ties for same ranks, it brings potentially noises to the result. e.g all pages of domain `x` have only 1 view counts, then all pages will be found in the toprank dataframe.
 
 I use RANK() function to compute toprank, ties entries are assigned the same rank, with the next ranking(s) skipped, see ```compute_ranks()``` function in ```./jobs/wiki_pageviews/wiki_pageviews_model.py```
 
 we might consider to use ROW_NUMBER() to reduce noise, or to use DENSE_RANK() to keep all tied ranks, see : https://codingsight.com/similarities-and-differences-among-rank-dense_rank-and-row_number-functions/ for more details
+
+## Run for a date range locally
+Execute task with specified data range as : `START_DATE=2020-01-22T02 END_DATE=2020-01-22T03 task local.daterange.run`
+
+it simply loops over a time range and execute docker-compose run sequentially, if you get a `500` error on fetching data then you are done, it doesn't support retries and concurrency runs, for more sophisticated run, See next section, **Run for a date range with Airflow on EKS**.
 
 ## Run for a date range with Airflow on EKS
 I provide a Airflow dag in the project `airflow-dag` folder, for scheduling a date range run.
 
 The Dag uses Airflow's [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/kubernetes.html) to schedule tasks to kubernetes, thus you need to have a working kubernetes cluster.
 
-If you don't have airflow in your cluster, you can deploy it with ```task airflow.deploy```, this task checkout a airflow helm chart(`mrmuggymuggy/airflow`) from my personal public helm repo, you can check the helm chart source code [here](https://github.com/mrmuggymuggy/helm-charts/tree/main/helm-chart-sources/airflow), it uses by default airflow image from my docker hub [here](https://hub.docker.com/repository/docker/mrmuggymuggy/airflow).
+If you don't have airflow in your cluster, you can deploy it with ```task airflow.deploy```, this task checkout a airflow helm chart(`mrmuggymuggy/airflow`) from my personal public helm repo, you can check the helm chart source code [here](https://github.com/mrmuggymuggy/helm-charts/tree/main/helm-chart-sources/airflow), it uses by default an Airflow image with Kubernetesoperator support from my docker hub [here](https://hub.docker.com/repository/docker/mrmuggymuggy/airflow).
 
 make sure that you have :
 1. Admin right on your working kubernetes namespace(where you are going to deploy Airflow), the Airflow helm chart will create a serviceaccount with admin rolebinding, it is neccessary for Airflow to launch task in kubernetes pod
@@ -126,3 +131,16 @@ For your solution, explain:
     * Would consider to make the spark stack transparent, so business users or Data analysts with only SQL knowledge are able to schedule Spark ETL without python programming and OPS knowledge
     * (On General Data architecture level)Would consider to simply dump raw pageviews data as partitioned day/hours parquet files to S3(Datalake), use a 3rd party payed big query engine such as AWS Athena or Snowflake to compute and schedule top ranks SQL jobs.
     * (On General Data architecture level)Would consider to use a payed 3rd party cloud data plateform services such as databricks/cloudera, so no need to manage infrastructure(AWS/EKS etc) for Airfow/kubernetes deployments
+
+### My words
+This project is in my private Github repository, don't worry that the code will be seen by other candidates.
+
+The roject architecture/code are adapted from two of my other projects:
+
+[k8s-spark-example](https://github.com/flix-tech/k8s-spark-example)
+
+And
+
+[k8s-airflow](https://github.com/flix-tech/k8s-airflow)
+
+You can have look at my (personal tech blog)[https://mrmuggymuggy.github.io/] to have some ideas about what I am doing.

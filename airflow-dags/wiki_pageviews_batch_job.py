@@ -4,8 +4,8 @@
 Wikipedia pageview dag using the Kubernetes Executor
 Hourly run schedule
 """
-import os, json, yaml
 from datetime import datetime, timedelta
+import os, json, yaml
 
 import airflow
 from airflow.models import DAG

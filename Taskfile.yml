@@ -49,6 +49,27 @@ tasks:
     cmds:
       - docker-compose up --abort-on-container-exit --build wikipedia_pageviews
 
+  local.daterange.run:
+    summary: |
+      Run the app locally for a date range with docker-compose
+      eg. START_DATE=2020-01-22T02 END_DATE=2020-01-22T03 task local.daterange.run
+    cmds:
+      - |
+        #docker-compose build wikipedia_pageviews
+        start=$(date -d"$START_DATE" +"%Y-%m-%dT%H")
+        end=$(date -d"$END_DATE" +"%Y-%m-%dT%H")
+        while [[ $start < $end ]]
+        do
+            echo execute spark job at $start time
+            docker-compose run -e EXECUTION_DATETIME=$start wikipedia_pageviews
+            start=$(date -d"$start + 1 hour" +"%Y-%m-%dT%H")
+        done;
+    env:
+      START_DATE:
+        '{{default "2020-01-22T08:00" .START_DATE}}'
+      END_DATE:
+        '{{default "2020-01-22T10:00" .END_DATE}}'
+
   unit-tests:
     summary: |
       Run the unit-tests locally with docker-compose
