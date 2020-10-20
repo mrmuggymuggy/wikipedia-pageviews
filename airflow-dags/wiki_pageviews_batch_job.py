@@ -37,13 +37,12 @@ envs = {
     "APP_NAME": DAG_NAME,
     "SOURCE_URL_PREFIX": "https://dumps.wikimedia.org/other/pageviews",
     "BLACKLISG_URL_IN": "https://s3.amazonaws.com/dd-interview-data/data_engineer/wikipedia/blacklist_domains_and_pages",
-    "PATH_OUT_PREFIX": "s3a://fxt-data-flux-mytests-manuel-tobedelete/outputs",
+    "PATH_OUT_PREFIX": "s3a://xxxxxxxxxxxxxxx/outputs",
     "EXECUTION_DATETIME": "{{ ts }}",
     "HOURLY": "True",
     "FORCE_REPROCESS": "false",
     "SPARK_PROPERTIES": spark_properties,
-    "AWS_IAM_ARN": "arn:aws:iam::453148432190:role/flixos/k8s/cujo-raw-to-master-spark-dev",
-    # "AWS_IAM_ARN": "xxxxxxIAM_ARNxxxxxx",
+    "AWS_IAM_ARN": "arn:aws:iam::xxxxxxxxxxxxxxx:role/xxxxxxxxxxxxxxx",
 }
 
 datadog_autodiscovery_conf = """
