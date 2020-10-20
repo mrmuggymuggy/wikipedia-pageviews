@@ -87,7 +87,7 @@ make sure that you have :
 
 To deploy the dag, run `task dags:deploy`, it packages the dag into a zip file and copy it to the Airflow pod
 
-To run for a date range, execute: `START_DATE=2020-01-11T02:00:00 END_DATE=2020-01-11T07:00:00 task dags:backfill`
+To run for a date range, execute: `START_DATE=2020-01-11T02 END_DATE=2020-01-11T07 task dags:backfill`
 
 The docker image used in the Dag can be built with `task docker.build`, you can also juste leave docker image reference as it is, as I pushed the app image to my docker hub [here](https://hub.docker.com/repository/docker/mrmuggymuggy/wikipedia_pageviews)
 

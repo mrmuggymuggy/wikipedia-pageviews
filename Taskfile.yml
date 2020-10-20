@@ -4,16 +4,10 @@ version: '2'
 
 env:
   DOCKER_IMAGE: wikipedia_pageviews
-  ENV: '{{default "minikube" .ENV}}'
   DOCKER_REGISTRY: '{{default "mrmuggymuggy" .DOCKER_REGISTRY}}'
   NAMESPACE: '{{default "default" .NAMESPACE}}'
   VERSION: 0.1.0
-
-vars:
   KUBE_CONTEXT: '{{default "minikube" .KUBE_CONTEXT}}'
-  HELM_CHART_NAME: wikipedia-pageviews-helm
-  DEFAULT_SERVICES: |-
-    wikipedia-pageviews
 
 includes:
   dags: ./airflow-dags
@@ -77,7 +71,6 @@ tasks:
       - docker-compose up --abort-on-container-exit --build wikipedia_pageviews_tests
 
   airflow.deploy:
-    deps: [set.k8s.context]
     cmds:
       #my helm chart repo
       - helm repo add mrmuggymuggy https://mrmuggymuggy.github.io/helm-charts/
@@ -85,7 +78,6 @@ tasks:
       - helm install airflow mrmuggymuggy/airflow --wait --timeout 600s
 
   airflow.undeploy:
-    deps: [set.k8s.context]
     cmds:
       - helm uninstall airflow
 
@@ -95,10 +87,10 @@ tasks:
 
   set.k8s.context:
     cmds:
-      - kubectl config set-context {{.KUBE_CONTEXT}} --namespace=$NAMESPACE
-      - kubectl config use-context {{.KUBE_CONTEXT}} --namespace=$NAMESPACE
+      - kubectl config set-context $KUBE_CONTEXT --namespace=$NAMESPACE
+      - kubectl config use-context $KUBE_CONTEXT --namespace=$NAMESPACE
 
   default:
     cmds:
-      - echo 'executed on {{if ne .KUBE_CONTEXT "minikube"}}remote{{else}}local{{end}}'
+      - echo 'try task local.run'
     silent: true
